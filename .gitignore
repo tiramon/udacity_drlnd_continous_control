@@ -1,4 +1,5 @@
 .ipynb_checkpoints
-Reacher_Windows_x86_64
+Reacher_*
 __pycache__
 unity-environment.log
+.spyproject

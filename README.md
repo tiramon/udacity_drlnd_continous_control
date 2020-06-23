@@ -37,4 +37,13 @@ before the command above it should work as expected
 
 ## Run Agent
 
+Run `Continous_Control_train.ipynb` to train the agent
+
 ## Files
+* Continuous_Control.ipynb - template given by udacity
+* Continuous_Control_train.ipynb - juptyter notebook for training of the agent
+* model.py - classes for the networks used by actor and critic
+* agent_ddpg.py - class of the DDPG agent
+* solved_735_actor_local.pth - weights of the first time the agent reached a average over 100 episodes of >30
+* end_actor_local.pth - weights of the trained agent after 1000 episodes
+

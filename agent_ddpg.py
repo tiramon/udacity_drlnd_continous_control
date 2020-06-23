@@ -9,13 +9,16 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-BUFFER_SIZE = int(1e4)  # replay buffer size
-BATCH_SIZE = 128        # minibatch size
-GAMMA = 0.99            # discount factor
-TAU = 1e-3              # for soft update of target parameters
-LR_ACTOR = 1e-4         # learning rate of the actor 
-LR_CRITIC = 1e-3        # learning rate of the critic
-WEIGHT_DECAY = 0        # L2 weight decay
+import json
+
+config = json.load(open('config.json'))
+BUFFER_SIZE = config['BUFFER_SIZE']  # replay buffer size
+BATCH_SIZE = config['BATCH_SIZE']        # minibatch size
+GAMMA = config['GAMMA']            # discount factor
+TAU = config['TAU']              # for soft update of target parameters
+LR_ACTOR = config['LR_ACTOR']        # learning rate of the actor 
+LR_CRITIC = config['LR_CRITIC']        # learning rate of the critic
+WEIGHT_DECAY = config['WEIGHT_DECAY']       # L2 weight decay
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -38,15 +41,17 @@ class Agent():
         # Actor Network (w/ Target Network)
         self.actor_local = Actor(state_size, action_size, random_seed).to(device)
         self.actor_target = Actor(state_size, action_size, random_seed).to(device)
+        #self.hard_copy(self.actor_local, self.actor_target)
         self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=LR_ACTOR)
 
         # Critic Network (w/ Target Network)
         self.critic_local = Critic(state_size, action_size, random_seed).to(device)
         self.critic_target = Critic(state_size, action_size, random_seed).to(device)
+        #self.hard_copy(self.critic_local, self.critic_target)
         self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC, weight_decay=WEIGHT_DECAY)
 
         # Noise process
-        self.noise = OUNoise(action_size, random_seed)
+        self.noise = OUNoise(action_size, random_seed, sigma= config["NOISE_SIGMA"])
 
         # Replay memory
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, random_seed)
@@ -57,9 +62,7 @@ class Agent():
         self.memory.add(state, action, reward, next_state, done)
 
         # Learn, if enough samples are available in memory
-        if len(self.memory) > BATCH_SIZE:
-            experiences = self.memory.sample()
-            self.learn(experiences, GAMMA)
+        
 
     def act(self, state, add_noise=True):
         """Returns actions for given state as per current policy."""
@@ -70,8 +73,7 @@ class Agent():
         self.actor_local.train()
         if add_noise:
             action += self.noise.sample()
-        #action = (action + 1.0) / 2.0
-        return np.clip(action, -1, 1)
+        return action
 
 
     def reset(self):
@@ -103,6 +105,8 @@ class Agent():
         # Minimize the loss
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
+        #from https://github.com/hortovanyi/DRLND-Continuous-Control/blob/master/ddpg_agent.py
+        torch.nn.utils.clip_grad_norm_(self.critic_local.parameters(), 1)
         self.critic_optimizer.step()
 
         # ---------------------------- update actor ---------------------------- #
@@ -130,6 +134,15 @@ class Agent():
         """
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
+            
+    def hard_copy(self, local_model, target_model):
+        for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
+            target_param.data.copy_(local_param.data)
+            
+    def step_learn(self):
+        if len(self.memory) > BATCH_SIZE:
+            experiences = self.memory.sample()
+            self.learn(experiences, GAMMA)
 
 class OUNoise:
     """Ornstein-Uhlenbeck process."""

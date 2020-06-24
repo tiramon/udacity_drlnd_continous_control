@@ -25,6 +25,14 @@ The agent was highly unstable at training, either it didn't learn above an avera
 | mu  | 0.0 |
 | theta | 0.15 |
 
+# Solving the Environment
+
+The configuration mentioned above solved the environment in episode 735. It started slow, but steady until in episode 657 where the score increased drastically.
+
+![score per episode](score_per_episode.png)
+
+![average score over 100 episodes](avg_score.png)
+
 # Future improvements
 
 Overall i would try to experiment further with the hyperparameters to maybe get more stable results over multiple runs. Also it increased the time per episode an increased size of the hidden layers might be worth some tests.
